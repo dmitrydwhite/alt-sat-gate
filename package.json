@@ -1,0 +1,22 @@
+{
+  "name": "mt-node-gate",
+  "version": "1.0.0",
+  "description": "node gateway for major tom",
+  "main": "index.js",
+  "scripts": {
+    "start": "node temp-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "11.0.x"
+  },
+  "author": "white.dmitry@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "request": "^2.88.0",
+    "websocket": "^1.0.28",
+    "ws": "^7.1.1"
+  }
+}
