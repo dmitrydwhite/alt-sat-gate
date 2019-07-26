@@ -180,7 +180,9 @@ function major_tom_ws_channel(invoked_url) {
     }));
   }
 
-  function is_connected() { return is_cx; }
+  function is_connected() {
+    return channel_socket && channel_socket.readyState === 1;
+  }
 
   // Define internal functions
   function send_of_type(type) {
@@ -292,6 +294,8 @@ function major_tom_ws_channel(invoked_url) {
   function setup_channel_socket() {
     channel_socket = new WebSocket(get_url());
 
+    is_cx = true;
+
     channel_socket.onmessage = function(message) {
       if (!handshook) {
         try {
@@ -313,10 +317,12 @@ function major_tom_ws_channel(invoked_url) {
     };
 
     channel_socket.onerror = function(error) {
+      is_cx = false;
       internal_message('Channel socket connection experienced an error', error);
     };
 
     channel_socket.onclose = function(close_message) {
+      is_cx = false;
       internal_message('Channel socket connection was closed', close_message);
     };
   }
@@ -333,12 +339,19 @@ function major_tom_ws_channel(invoked_url) {
     }
   }
 
+  function close() {
+    if (channel_socket) {
+      channel_socket.close();
+    }
+  }
+
   // Attempt to connect automatically if the invoked url has all needed elements
   if (url_is_complete()) {
     try_connection();
   }
 
   return Object.freeze({
+    close,
     connect,
     set_gateway_url,
     set_gateway_token,

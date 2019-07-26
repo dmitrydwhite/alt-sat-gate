@@ -129,22 +129,26 @@ function example_gateway(server, host, token, username, password) {
   gateway.open_system_channel();
 
   gateway.on_mt_message(function(message) {
-    const msg = JSON.parse(message);
+    try {
+      const msg = JSON.parse(message);
 
-    if (msg.type === 'command') {
-      const manage_on_gateway = ['uplink_file'];
-      const system_name = msg.command.system;
+      if (msg.type === 'command') {
+        const manage_on_gateway = ['uplink_file'];
+        const system_name = msg.command.system;
 
-      if (manage_on_gateway.indexOf(msg.command.type) !== -1) {
-        return manage_command_on_gateway(msg.command);
+        if (manage_on_gateway.indexOf(msg.command.type) !== -1) {
+          return manage_command_on_gateway(msg.command);
+        }
+
+        send_to_system(system_name, msg.command);
       }
 
-      send_to_system(system_name, msg.command);
-    }
-
-    if (msg.type === 'error') {
-      // TODO: Implement this:
-      gateway.token_invalidated();
+      if (msg.type === 'error') {
+        // TODO: Implement this:
+        gateway.token_invalidated();
+      }
+    } catch (err) {
+      console.log(err);
     }
 
     console.log(message);

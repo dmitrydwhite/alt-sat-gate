@@ -97,12 +97,13 @@ function mt_system_channel(server) {
     http_request_callback = cb;
   }
 
+  ws_server.on('connection', function (cx_obj) {
+    console.log('heard cx request');
+  })
+
   ws_server.on('request', function (request) {
     const { origin, resource } = request;
     const system_name = valid_resource_request(resource);
-
-    console.log(request);
-    console.log(system_name);
 
     if (!system_name) {
       request.reject();
@@ -112,7 +113,7 @@ function mt_system_channel(server) {
       return;
     }
 
-    const connection = request.accept('', origin);
+    const connection = request.accept(null, origin);
 
     connection.on('message', function(message) {
       if (system_message_cb) {

@@ -86,10 +86,18 @@ function hive_mind(server) {
     }
   }
 
+  function disconnect_from_mt() {
+    if (ws_channel) ws_channel.close();
+  }
+
   function download_file_from_mt(download_path) {
     if (rest_channel) {
       rest_channel.download_file_from_mt(download_path)
     }
+  }
+
+  function is_connected_to_mt() {
+    return ws_channel && ws_channel.is_connected();
   }
 
   function on_file_download(success, failure) {
@@ -112,9 +120,11 @@ function hive_mind(server) {
 
   return {
     connect_to_mt,
+    disconnect_from_mt,
     download_file_from_mt,
     get_system,
     get_system_cx_key,
+    is_connected_to_mt,
     on_file_download,
     on_http_request,
     on_mt_message,
