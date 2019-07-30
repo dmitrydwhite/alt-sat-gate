@@ -30,6 +30,7 @@ function mt_system_channel(server) {
   const connection_bus = {};
   const waiting_connections = {};
   let system_message_cb;
+  let system_name;
 
   function valid_resource_request(resource) {
     const [match_key, encoded_sys_name] = resource.split('/')
@@ -103,7 +104,8 @@ function mt_system_channel(server) {
 
   ws_server.on('request', function (incoming) {
     const { origin, resource } = incoming;
-    const system_name = valid_resource_request(resource);
+    
+    system_name = valid_resource_request(resource);
 
     if (!system_name) {
       incoming.reject();
