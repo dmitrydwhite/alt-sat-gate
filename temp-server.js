@@ -113,7 +113,7 @@ app.get('/connect', function(request, response) {
 
     if (auth === 'true') {
       auth_host = host;
-      response.status(200).send(`authorizing${auth_script}`);
+      response.status(200).send(`<p ${p_style}>authorizing</p>${auth_script}`);
       return;
     }
 
