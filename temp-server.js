@@ -13,7 +13,6 @@ const auth_script = `
     var password = prompt("Enter basic auth password");
 
     if (username && password) {
-      debugger;
       var r = new XMLHttpRequest();
       r.open("POST", "https://still-scrubland-52114.herokuapp.com/authorize");
       r.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
@@ -52,6 +51,10 @@ const p_style = 'style="font-size: 48px; font-family: Monospace;"';
 let exposed_gateway;
 let memory_token;
 let auth_host;
+const RETRY_LIMIT = 10;
+let retries = RETRY_LIMIT;
+let mem_user;
+let mem_pass;
 
 // let app;
 // app = https.createServer(options, function (request, response) {
@@ -130,6 +133,22 @@ app.get('/connect', function(request, response) {
       }
     }, 500);
 
+    const keep_alive = setInterval(function() {
+      if (retries <= 0) {
+        clearInterval(keep_alive);
+      }
+
+      if (exposed_gateway) {
+        if (!exposed_gateway.is_connected_to_mt()) {
+          exposed_gateway.connect_to_mt(host, token, mem_user, mem_pass);
+
+          retries -= 1;
+        } else {
+          retries = RETRY_LIMIT;
+        }
+      }
+    }, 60000);
+
   } else {
     response.status(200).send(`<p ${p_style}>not cx</p>`);
   }
@@ -168,6 +187,8 @@ app.post('/authorize', function(request, response) {
 
   setTimeout(function() {
     if (exposed_gateway.is_connected_to_mt()) {
+      mem_user = user;
+      mem_pass = pass;
       response.status(200).end();
     } else {
       response.status(403).end();

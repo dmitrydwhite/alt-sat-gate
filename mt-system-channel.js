@@ -98,9 +98,9 @@ function mt_system_channel(server) {
     http_request_callback = cb;
   }
 
-  ws_server.on('connection', function (cx_obj) {
-    console.log('heard cx request');
-  })
+  // ws_server.on('connection', function (cx_obj) {
+  //   console.log('heard cx request');
+  // });
 
   ws_server.on('request', function (incoming) {
     const { origin, resource } = incoming;
@@ -112,10 +112,10 @@ function mt_system_channel(server) {
       internal_message(
         `${new Date()} : Connection from origin ${origin} rejected`
       );
-      return;
+    } else {
+      incoming.accept(null, origin);    
     }
 
-    incoming.accept(null, origin);
 
     // const connection = incoming.accept(null, origin);
 
@@ -146,6 +146,10 @@ function mt_system_channel(server) {
     });
 
     connection.on('close', function() {
+      delete connection_bus[system_name];
+    });
+
+    connection.on('error', function() {
       delete connection_bus[system_name];
     });
 
