@@ -17,6 +17,11 @@ const auth_script = `
       var r = new XMLHttpRequest();
       r.open("POST", "https://still-scrubland-52114.herokuapp.com/authorize");
       r.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      r.onReadyStateChange = function() {
+        if (r.readyState === 4) {
+          window.location.pathname = '/status';
+        }
+      };
       r.send(JSON.stringify({user: username, pass: password }));
     }
   </script>
@@ -43,6 +48,7 @@ const regen_script_x = `
   </script>
 `;
 const regen_script = '';
+const p_style = 'style="font-size: 48px; font-family: Monospace;"';
 let exposed_gateway;
 let memory_token;
 let auth_host;
@@ -85,7 +91,7 @@ app.use(bodyParser.json({ strict: true }));
 app.get('/pinCode', function(request, response) {
   if (exposed_gateway) {
     response.status(200).send(`
-      <p style="font-size: 48px; font-family: Monospace;">
+      <p ${p_style}>
         ${exposed_gateway.get_system_cx_key().replace('gateway', '')}
       </p>
       ${regen_script}
@@ -118,14 +124,14 @@ app.get('/connect', function(request, response) {
 
     setTimeout(function() {
       if (exposed_gateway.is_connected_to_mt()) {
-        response.status(200).send(`cx good${regen_script}`);
+        response.status(200).send(`<p ${p_style}>cx good</p>${regen_script}`);
       } else {
-        response.status(200).send('not cx');
+        response.status(200).send(`<p ${p_style}>not cx</p>`);
       }
     }, 500);
 
   } else {
-    response.status(200).send('not cx');
+    response.status(200).send(`<p ${p_style}>not cx</p>`);
   }
 });
 
@@ -136,11 +142,19 @@ app.get('/disconnect', function(request, response) {
 
   exposed_gateway = undefined;
 
-  response.status(200).send('disconnected');
+  response.status(200).send(`<p ${p_style}>disconnected</p>`);
 });
 
 app.get('/', function(request, response) {
-  response.status(200).send('App listening');
+  response.status(200).send(`<p ${p_style}>App listening</p>`);
+});
+
+app.get('/status', function(request, response) {
+  if (exposed_gateway && exposed_gateway.is_connected_to_mt()) {
+    response.status(200).send(`<p ${p_style}>Connected</p>`);
+  } else {
+    response.status(200).send(`<p ${p_style}>Not Connected</p>`);
+  }
 });
 
 app.post('/authorize', function(request, response) {
@@ -154,9 +168,9 @@ app.post('/authorize', function(request, response) {
 
   setTimeout(function() {
     if (exposed_gateway.is_connected_to_mt()) {
-      response.status(200).send(`cx good${regen_script}`);
+      response.status(200).end();
     } else {
-      response.status(200).send('not cx');
+      response.status(403).end();
     }
   }, 500);
 });
