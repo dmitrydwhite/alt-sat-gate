@@ -101,20 +101,40 @@ function mt_system_channel(server) {
     console.log('heard cx request');
   })
 
-  ws_server.on('request', function (request) {
-    const { origin, resource } = request;
+  ws_server.on('request', function (incoming) {
+    const { origin, resource } = incoming;
     const system_name = valid_resource_request(resource);
 
     if (!system_name) {
-      request.reject();
+      incoming.reject();
       internal_message(
         `${new Date()} : Connection from origin ${origin} rejected`
       );
       return;
     }
 
-    const connection = request.accept(null, origin);
+    incoming.accept(null, origin);
 
+    // const connection = incoming.accept(null, origin);
+
+    // connection.on('message', function(message) {
+    //   if (system_message_cb) {
+    //     system_message_cb(message);
+    //   } else {
+    //     internal_message(message);
+    //   }
+    // });
+
+    // connection.on('close', function() {
+    //   delete connection_bus[system_name];
+    // });
+
+    // connection_bus[system_name] = connection;
+
+    // update_connected(system_name);
+  });
+
+  ws_server.on('connect', function(connection) {
     connection.on('message', function(message) {
       if (system_message_cb) {
         system_message_cb(message);
