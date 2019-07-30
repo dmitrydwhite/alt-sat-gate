@@ -17,7 +17,7 @@ const auth_script = `
       var r = new XMLHttpRequest();
       r.open("POST", "https://still-scrubland-52114.herokuapp.com/authorize");
       r.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-      r.onReadyStateChange = function() {
+      r.onreadystatechange = function() {
         if (r.readyState === 4) {
           window.location.pathname = '/status';
         }
@@ -97,7 +97,7 @@ app.get('/pinCode', function(request, response) {
       ${regen_script}
     `);
   } else {
-    response.status(200).send('not cx');
+    response.status(200).send(`<p ${p_style}>not cx</p>`);
   }
 });
 
