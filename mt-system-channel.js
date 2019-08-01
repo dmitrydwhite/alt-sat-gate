@@ -11,8 +11,8 @@ function get_random (low, hi) {
 
 function mt_system_channel(server) {
   let http_request_callback;
-  const ws_key = get_random(1048576, 16777215).toString(16) + 'gateway';
-  // const ws_key = '000000gateway';
+  // const ws_key = get_random(1048576, 16777215).toString(16) + 'gateway';
+  const ws_key = '000000gateway';
   const { internal_message } = internal_messager();
   const httpServer = https.createServer(function (request, response) {
     if (http_request_callback) {
@@ -104,7 +104,7 @@ function mt_system_channel(server) {
 
   ws_server.on('request', function (incoming) {
     const { origin, resource } = incoming;
-    
+
     system_name = valid_resource_request(resource);
 
     if (!system_name) {
@@ -113,7 +113,7 @@ function mt_system_channel(server) {
         `${new Date()} : Connection from origin ${origin} rejected`
       );
     } else {
-      incoming.accept(null, origin);    
+      incoming.accept(null, origin);
     }
 
 
