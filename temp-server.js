@@ -19,15 +19,22 @@ const auth_script = `
       r.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
       r.onreadystatechange = function() {
         if (r.readyState === 4) {
-          window.location.pathname = '/status';
+          window.location.pathname = "/status";
         }
       };
       r.send(JSON.stringify({user: username, pass: password }));
     }
   </script>
 `;
-const regen_script = '';
 const p_style = 'style="font-size: 48px; font-family: Monospace;"';
+const try_reconnect_button = `
+  <button id="try-reconnect">Try Connecting Again</button>
+  <script>
+    document.getElementById("try-reconnect").addEventListener("click", function() {
+      window.location.pathname = "/connect";
+    });
+  </script>
+`;
 let exposed_gateway;
 let memory_token;
 let auth_host;
@@ -44,7 +51,6 @@ app.get('/pinCode', function(request, response) {
       <p ${p_style}>
         ${exposed_gateway.get_system_cx_key().replace('gateway', '')}
       </p>
-      ${regen_script}
     `);
   } else {
     response.status(200).send(`<p ${p_style}>not cx</p>`);
@@ -74,7 +80,7 @@ app.get('/connect', function(request, response) {
 
     setTimeout(function() {
       if (exposed_gateway.is_connected_to_mt()) {
-        response.status(200).send(`<p ${p_style}>cx good</p>${regen_script}`);
+        response.status(200).send(`<p ${p_style}>cx good</p>`);
       } else {
         response.status(200).send(`<p ${p_style}>not cx</p>`);
       }
@@ -117,9 +123,9 @@ app.get('/', function(request, response) {
 
 app.get('/status', function(request, response) {
   if (exposed_gateway && exposed_gateway.is_connected_to_mt()) {
-    response.status(200).send(`<p ${p_style}>Connected</p>`);
+    response.status(200).send(`<p ${p_style}>Connected</p>${try_reconnect_button}`);
   } else {
-    response.status(200).send(`<p ${p_style}>Not Connected</p>`);
+    response.status(200).send(`<p ${p_style}>Not Connected</p>${try_reconnect_button}`);
   }
 });
 

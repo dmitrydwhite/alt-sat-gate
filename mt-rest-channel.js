@@ -130,6 +130,7 @@ function major_tom_files_channel(passed_host, passed_token) {
           return;
         }
 
+        // TODO: Handle success and failure callbacks or messaging
         try {
           JSON.parse(body);
 
@@ -161,6 +162,7 @@ function major_tom_files_channel(passed_host, passed_token) {
           console.log('second request body', body);
           console.log('status', response.statusCode);
 
+          // TODO: Handle success and failure callbacks or messaging
           if (error || response.statusCode >= 400) {
             console.log('make_second_request errored');
             console.log(error);
@@ -186,6 +188,7 @@ function major_tom_files_channel(passed_host, passed_token) {
           'Content-Type': 'application/json',
         },
       }, function (error, response, body) {
+        // TODO: Handle success and failure callbacks or messaging
         if (error) {
           console.log(error);
           return;

@@ -1,6 +1,4 @@
 const WebSocketServer = require('websocket').server;
-// const WebSocketServer = require('ws').Server;
-// const io = require('socket.io');
 const https = require('https');
 const internal_messager = require('./internal-message.js');
 
@@ -11,7 +9,6 @@ function get_random (low, hi) {
 
 function mt_system_channel(server) {
   let http_request_callback;
-  // const ws_key = get_random(1048576, 16777215).toString(16) + 'gateway';
   const ws_key = '000000gateway';
   const { internal_message } = internal_messager();
   const httpServer = https.createServer(function (request, response) {
@@ -26,7 +23,6 @@ function mt_system_channel(server) {
     autoAcceptConnections: false,
     httpServer: server || httpServer,
   });
-  // const ws_server = io(server || httpServer);
   const connection_bus = {};
   const waiting_connections = {};
   let system_message_cb;
@@ -98,9 +94,9 @@ function mt_system_channel(server) {
     http_request_callback = cb;
   }
 
-  // ws_server.on('connection', function (cx_obj) {
-  //   console.log('heard cx request');
-  // });
+  ws_server.on('connection', function (cx_obj) {
+    console.log('heard event: CONNECTION');
+  });
 
   ws_server.on('request', function (incoming) {
     const { origin, resource } = incoming;
@@ -115,25 +111,6 @@ function mt_system_channel(server) {
     } else {
       incoming.accept(null, origin);
     }
-
-
-    // const connection = incoming.accept(null, origin);
-
-    // connection.on('message', function(message) {
-    //   if (system_message_cb) {
-    //     system_message_cb(message);
-    //   } else {
-    //     internal_message(message);
-    //   }
-    // });
-
-    // connection.on('close', function() {
-    //   delete connection_bus[system_name];
-    // });
-
-    // connection_bus[system_name] = connection;
-
-    // update_connected(system_name);
   });
 
   ws_server.on('connect', function(connection) {

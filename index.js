@@ -2,7 +2,7 @@ const mt_ws_channel = require('./mt-ws-channel');
 const mt_rest_channel = require('./mt-rest-channel');
 const mt_system_channel = require('./mt-system-channel');
 
-function hive_mind(server) {
+function mt_node_gateway(server) {
   let ws_channel;
   let rest_channel;
   let system_channel;
@@ -136,4 +136,4 @@ function hive_mind(server) {
   };
 }
 
-module.exports = hive_mind;
+module.exports = mt_node_gateway;
