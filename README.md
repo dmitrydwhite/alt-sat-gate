@@ -53,7 +53,21 @@ However, it hasn't connected to Major Tom yet.
 
 ### To Connect Systems
 
-This gateway library is designed to accept connections from Systems over a WebSocket. For that purpose, it runs a WebSocket server to listen for connections.  That server can be configured by an implementer by passing an httpServer instance to the gateway instance constructor (`index.js > mt_node_gateway`).  However, some implementation specificity decisions had to be made; therefore, this library currently explicitly expects the Websocket request to the server to be at the path `/<websocket connection key>/<system name>` There may be a better way to validate or expect WS connections, and to implement the server modularity.
+This gateway library is designed to accept connections from Systems over a WebSocket. For that purpose, it runs a WebSocket server to listen for connections.  That server can be configured by an implementer by passing an httpServer instance to the gateway instance constructor.
+
+e.g.
+```js
+const gateway = require('./index.js');
+const my_server = create_a_server_instance_somehow();
+
+const my_gateway = gateway(my_server);
+
+// Now we can do all the things a gateway does:
+my_gateway.connect_to_mt(my_host, my_token, my_username, my_password);  // etc.
+
+```
+
+However, some implementation specificity decisions had to be made; therefore, this library currently explicitly expects the Websocket request to the server to be at the path `/<websocket connection key>/<system name>` There may be a better way to validate or expect WS connections, and to implement the server modularity.
 
 In the case of `temp-server.js` and `example-app.js`, they are particularly designed to handle and expect connections from the Major Tom Example Satellite for Web, which is still being worked on.
 
