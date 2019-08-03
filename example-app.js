@@ -184,22 +184,6 @@ function example_gateway(server, host, token, username, password) {
     console.log(message);
   });
 
-  gateway.on_http_request(function (request, response) {
-    const req_url = url.parse(request.url);
-
-    if (req_url.pathname === '/pin_code')  {
-      response.writeHead(200);
-      response.end(`
-        <p style="font-size: 48px; font-family: Monospace;">
-          ${gateway.get_system_cx_key().replace('gateway', '')}
-        </p>
-      `);
-    } else {
-      response.writeHead(404);
-      response.end();
-    }
-  });
-
   return gateway;
 }
 
