@@ -1,6 +1,6 @@
 const url = require('url');
 
-const app = require('./index.js');
+const app = require('../index.js');
 
 let gateway;
 

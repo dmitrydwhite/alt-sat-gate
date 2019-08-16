@@ -4,7 +4,7 @@
   "description": "node gateway for major tom",
   "main": "index.js",
   "scripts": {
-    "start": "node temp-server.js",
+    "start": "node example/temp-server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {

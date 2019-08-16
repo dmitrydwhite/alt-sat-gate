@@ -1,6 +1,6 @@
 const WebSocketServer = require('websocket').server;
 const https = require('https');
-const internal_messager = require('./internal-message.js');
+const internal_messager = require('./src/internal-message.js');
 
 function get_random (low, hi) {
   return hi > low &&
@@ -24,6 +24,7 @@ function mt_system_channel(server) {
     httpServer: server || httpServer,
   });
   const connection_bus = {};
+  const connection_timers = {};
   const waiting_connections = {};
   let system_message_cb;
   let system_name;
@@ -60,6 +61,16 @@ function mt_system_channel(server) {
     }
 
     system_message_cb = cb;
+  }
+
+  function set_connection_timer(system_name) {
+    if (connection_timers[system_name]) {
+      clearTimeout(connection_timers[system_name]);
+    }
+
+    connection_timers[system_name] = setTimeout(function () {
+      delete connection_bus[system_name];
+    }, 120 * 60 * 1000); // 120 minutes;
   }
 
   function update_connected(system_name) {
@@ -129,6 +140,8 @@ function mt_system_channel(server) {
     connection.on('error', function() {
       delete connection_bus[system_name];
     });
+
+    set_connection_timer(system_name);
 
     connection_bus[system_name] = connection;
 

@@ -1,5 +1,5 @@
-const mt_ws_channel = require('./mt-ws-channel');
-const mt_rest_channel = require('./mt-rest-channel');
+const mt_ws_channel = require('./src/mt-ws-channel');
+const mt_rest_channel = require('./src/mt-rest-channel');
 const mt_system_channel = require('./mt-system-channel');
 
 function mt_node_gateway(server) {
