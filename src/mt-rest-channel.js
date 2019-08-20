@@ -12,6 +12,8 @@ function major_tom_files_channel(passed_host, passed_token) {
   let { internal_message, on_message, set_internal_pace } = internal_messager();
   let on_download_cb = internal_message;
   let on_download_failed_cb = internal_message;
+  let on_upload_failed_cb = internal_message;
+  let on_upload_cb = internal_message;
 
   function set_files_url(url, opt_token) {
     host = url;
@@ -125,18 +127,16 @@ function major_tom_files_channel(passed_host, passed_token) {
         }),
       }, function third_request_callback(error, response, body) {
         if (error) {
-          console.log('make_third_request errored');
-          console.log(error);
+          on_upload_failed_cb(error);
           return;
         }
 
-        // TODO: Handle success and failure callbacks or messaging
         try {
-          JSON.parse(body);
+          const response_body = JSON.parse(body);
 
-          console.log('SUCCESS');
+          on_upload_cb(response_body);
         } catch (e) {
-          console.log('third request failed', e);
+          on_upload_failed_cb(e);
         }
       });
     }
@@ -148,8 +148,6 @@ function major_tom_files_channel(passed_host, passed_token) {
       const content_md5 = headers['Content-MD5'];
       const upload_url = direct_upload_vals.url;
 
-      console.log(File);
-
       request({
           uri: upload_url,
           method: 'put',
@@ -159,13 +157,8 @@ function major_tom_files_channel(passed_host, passed_token) {
             'Content-MD5': checksum,
           },
         }, function second_request_cb(error, response, body) {
-          console.log('second request body', body);
-          console.log('status', response.statusCode);
-
-          // TODO: Handle success and failure callbacks or messaging
           if (error || response.statusCode >= 400) {
-            console.log('make_second_request errored');
-            console.log(error);
+            on_upload_failed_cb(error || `Response status ${response.statusCode}`);
             return;
           }
 
@@ -188,9 +181,8 @@ function major_tom_files_channel(passed_host, passed_token) {
           'Content-Type': 'application/json',
         },
       }, function (error, response, body) {
-        // TODO: Handle success and failure callbacks or messaging
         if (error) {
-          console.log(error);
+          on_upload_failed_cb(error);
           return;
         }
 
@@ -199,11 +191,9 @@ function major_tom_files_channel(passed_host, passed_token) {
             first_response = JSON.parse(body);
             signed_id = first_response.signed_id;
 
-            console.log(first_response);
-
             make_second_request();
           } catch (err) {
-            console.log(err);
+            on_upload_failed_cb(err);
           }
         }
       });
@@ -212,6 +202,7 @@ function major_tom_files_channel(passed_host, passed_token) {
     function calculate_checksum() {
       const checksum_calculator = new stream.Readable();
 
+      // This is a little dance to hash the file as a stream:
       checksum_calculator._read = function() { return false; };
       checksum_calculator.push(File);
       checksum_calculator.push(null);
@@ -223,20 +214,40 @@ function major_tom_files_channel(passed_host, passed_token) {
       checksum_calculator.on('end', function() {
         checksum = hashing.digest('base64');
 
-        console.log('checksum', checksum);
-
+        // Make the first request once the checksum has been calculated:
         make_first_request();
       });
     }
 
     const byte_size = File.byteLength;
+    const hashing = crypto.createHash('md5');
     const timestamp = Date.now();
     let first_response = {};
     let signed_id;
-    let hashing = crypto.createHash('md5');
     let checksum;
 
     calculate_checksum();
+  }
+
+  function handle_file_upload(success, failure) {
+    if (typeof success !== 'function') {
+      throw new Error('Method handle_file_download requires at least one callback function');
+    }
+
+    if (['function', 'undefined'].indexOf(typeof failure) === -1) {
+      throw new Error(
+        'Method handle_file_download second argument must be a callback function'
+      );
+    }
+
+    if (success.length !== 2) {
+      throw new Error(
+        'Handler for file download should take two parameters; see docs for details'
+      );
+    }
+
+    on_upload_failed_cb = failure || success;
+    on_upload_cb = success;
   }
 
   set_files_url(passed_host, passed_token);
@@ -249,7 +260,7 @@ function major_tom_files_channel(passed_host, passed_token) {
     set_gateway_token,
     set_internal_pace,
     upload_file_to_mt,
-    // on_file_upload_complete,
+    handle_file_upload,
   };
 }
 

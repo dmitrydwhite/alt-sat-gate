@@ -53,7 +53,7 @@ app.get('/pinCode', function(request, response) {
       </p>
     `);
   } else {
-    response.status(200).send(`<p ${p_style}>not cx</p>`);
+    response.status(200).send(`<p ${p_style}>Not Connected</p>`);
   }
 });
 
@@ -69,22 +69,21 @@ app.get('/connect', function(request, response) {
 
     if (auth === 'true') {
       auth_host = host;
-      response.status(200).send(`<p ${p_style}>authorizing</p>${auth_script}`);
+      response.status(200).send(`<p ${p_style}>Authorizing</p>${auth_script}`);
       return;
     }
 
     if (!exposed_gateway || (exposed_gateway && !exposed_gateway.is_connected_to_mt())) {
-      exposed_gateway = undefined;
       exposed_gateway = example_gateway(app_server, host, token);
     }
 
     setTimeout(function() {
       if (exposed_gateway.is_connected_to_mt()) {
-        response.status(200).send(`<p ${p_style}>cx good</p>`);
+        response.status(200).send(`<p ${p_style}>Connected</p>`);
       } else {
-        response.status(200).send(`<p ${p_style}>not cx</p>`);
+        response.status(200).send(`<p ${p_style}>Not Connected</p>`);
       }
-    }, 500);
+    }, 800);
 
     const keep_alive = setInterval(function() {
       if (retries <= 0) {
@@ -103,7 +102,7 @@ app.get('/connect', function(request, response) {
     }, 60000);
 
   } else {
-    response.status(200).send(`<p ${p_style}>not cx</p>`);
+    response.status(200).send(`<p ${p_style}>Not Connected</p>`);
   }
 });
 
@@ -114,11 +113,11 @@ app.get('/disconnect', function(request, response) {
 
   exposed_gateway = undefined;
 
-  response.status(200).send(`<p ${p_style}>disconnected</p>`);
+  response.status(200).send(`<p ${p_style}>Disconnected</p>`);
 });
 
 app.get('/', function(request, response) {
-  response.status(200).send(`<p ${p_style}>App listening</p>`);
+  response.status(200).send(`<p ${p_style}>App Listening</p>`);
 });
 
 app.get('/status', function(request, response) {
