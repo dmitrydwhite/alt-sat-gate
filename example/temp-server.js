@@ -27,12 +27,40 @@ const auth_script = `
   </script>
 `;
 const p_style = 'style="font-size: 48px; font-family: Monospace;"';
-const try_reconnect_button = `
-  <button id="try-reconnect">Try Connecting Again</button>
+const gateway_status_info_display = `
+  <div id="gateway-status-info"></div>
+  <script>
+    var q = (window.location.search || "").substring(1).split("&").forEach(function (c) {
+      var b = c.split("=");
+      var d = document.createElement("h3");
+      var e = document.createElement("h2");
+      d.setAttribute("style", "font-family: Monospace;");
+      d.innerText = "" + b[0];
+      e.setAttribute("style", "font-family: Monospace;");
+      e.innerText = "" + b[1];
+
+      document.getElementById("gateway-status-info").appendChild(d);
+      document.getElementById("gateway-status-info").appendChild(e);
+    });
+  </script>
+`;
+const button_actions_bank = `
+  <button id="try-reconnect">Re-Connect</button>
+  <button id="to-disconnect">Disconnect</button>
   <script>
     document.getElementById("try-reconnect").addEventListener("click", function() {
       window.location.pathname = "/connect";
     });
+    document.getElementById("to-disconnect").addEventListener("click", function() {
+      window.location.pathname = "/disconnect";
+    })
+  </script>
+`;
+const redirect_to_status_script = `
+  <script>
+    window.setTimeout(function() {
+      window.location.pathname = "/status";
+    }, 800);
   </script>
 `;
 let exposed_gateway;
@@ -76,31 +104,8 @@ app.get('/connect', function(request, response) {
     if (!exposed_gateway || (exposed_gateway && !exposed_gateway.is_connected_to_mt())) {
       exposed_gateway = example_gateway(app_server, host, token);
     }
-
-    setTimeout(function() {
-      if (exposed_gateway.is_connected_to_mt()) {
-        response.status(200).send(`<p ${p_style}>Connected</p>`);
-      } else {
-        response.status(200).send(`<p ${p_style}>Not Connected</p>`);
-      }
-    }, 800);
-
-    const keep_alive = setInterval(function() {
-      if (retries <= 0) {
-        clearInterval(keep_alive);
-      }
-
-      if (exposed_gateway) {
-        if (!exposed_gateway.is_connected_to_mt()) {
-          exposed_gateway.connect_to_mt(host, token, mem_user, mem_pass);
-
-          retries -= 1;
-        } else {
-          retries = RETRY_LIMIT;
-        }
-      }
-    }, 60000);
-
+    
+    response.status(200).send(`<p ${p_style}>Connecting...</p>${redirect_to_status_script}`);
   } else {
     response.status(200).send(`<p ${p_style}>Not Connected</p>`);
   }
@@ -113,7 +118,7 @@ app.get('/disconnect', function(request, response) {
 
   exposed_gateway = undefined;
 
-  response.status(200).send(`<p ${p_style}>Disconnected</p>`);
+  response.status(200).send(`${gateway_status_info_display}<p ${p_style}>Disconnected</p>${button_actions_bank}`);
 });
 
 app.get('/', function(request, response) {
@@ -121,11 +126,22 @@ app.get('/', function(request, response) {
 });
 
 app.get('/status', function(request, response) {
-  if (exposed_gateway && exposed_gateway.is_connected_to_mt()) {
-    response.status(200).send(`<p ${p_style}>Connected</p>${try_reconnect_button}`);
-  } else {
-    response.status(200).send(`<p ${p_style}>Not Connected</p>${try_reconnect_button}`);
-  }
+  const connected_state = exposed_gateway && exposed_gateway.is_connected_to_mt()
+    ? 'Connected'
+    : 'Not Connected';
+
+  response.status(200).send(`
+    ${gateway_status_info_display}
+    <p ${p_style}>${connected_state}</p>
+    ${button_actions_bank}
+  `);
+
+
+  // if (exposed_gateway && exposed_gateway.is_connected_to_mt()) {
+  //   response.status(200).send(`<p ${p_style}>Connected</p>${button_actions_bank}`);
+  // } else {
+  //   response.status(200).send(`<p ${p_style}>Not Connected</p>${button_actions_bank}`);
+  // }
 });
 
 app.post('/authorize', function(request, response) {

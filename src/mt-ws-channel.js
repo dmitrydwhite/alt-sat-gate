@@ -344,6 +344,11 @@ function major_tom_ws_channel(invoked_url) {
 
   function close() {
     if (channel_socket) {
+      channel_socket.onclose = function() {
+        is_cx = false;
+        internal_message('User initiated close event');
+      };
+
       channel_socket.close();
     }
   }
