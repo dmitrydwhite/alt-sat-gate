@@ -46,6 +46,7 @@ const gateway_status_info_display = `
 `;
 const button_actions_bank = `
   <button id="try-reconnect">Re-Connect</button>
+  <button id="check-status">Check Status</button>
   <button id="to-disconnect">Disconnect</button>
   <script>
     document.getElementById("try-reconnect").addEventListener("click", function() {
@@ -53,7 +54,10 @@ const button_actions_bank = `
     });
     document.getElementById("to-disconnect").addEventListener("click", function() {
       window.location.pathname = "/disconnect";
-    })
+    });
+    document.getElementById("check-status").addEventListener("click", function() {
+      window.location.pathname = "/status";
+    });
   </script>
 `;
 const redirect_to_status_script = `
@@ -135,13 +139,6 @@ app.get('/status', function(request, response) {
     <p ${p_style}>${connected_state}</p>
     ${button_actions_bank}
   `);
-
-
-  // if (exposed_gateway && exposed_gateway.is_connected_to_mt()) {
-  //   response.status(200).send(`<p ${p_style}>Connected</p>${button_actions_bank}`);
-  // } else {
-  //   response.status(200).send(`<p ${p_style}>Not Connected</p>${button_actions_bank}`);
-  // }
 });
 
 app.post('/authorize', function(request, response) {

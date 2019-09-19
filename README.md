@@ -10,7 +10,40 @@ The WebSocket connection to Systems right now is kind of floating off to the sid
 
 `example/temp-server.js` allows you to run a localhost server that allows a user to take some rudimentary actions.  It's built on top of `example/example-app.js`, but it probably could just talk to `index.js` directly too.
 
-### To Run This Locally
+### You Can Start a Major Tom Gateway Right from the Node REPL
+
+```javascript
+const new_gateway = require('./index.js');
+
+const my_gateway = new_gateway();
+
+// my_gateway is now an instance of Major Tom Node Gateway
+my_gateway.connect_to_mt('wss://you.majortom.cloud', '<my gateway token>');
+// If your instance of you.majortom.cloud is protected by basic auth, pass
+// username and password as the third and fourth args to connect_to_mt()
+
+// This gateway is now connected to Major Tom.  Tell it what to do when it
+// receives a message from Major Tom:
+my_gateway.on_mt_message(console.log);
+// Very simple; just log the message to console
+
+// Now we can send a message to Major Tom
+const first_message = {
+  type: 'events',
+  events: [{
+    type: 'Greeting',
+    message: 'Hello from the Node REPL',
+  }]
+};
+const first_message_string = JSON.stringify(first_message);
+
+my_gateway.to_mt(first_message_string);
+
+// Now if you check your Major Tom UI, you should see the message was received
+// from this gateway.
+```
+
+### To Run `temp-server.js` Locally
 
 ```sh
 $ git clone <this-repo>
