@@ -325,6 +325,8 @@ function major_tom_ws_channel(invoked_url) {
       is_cx = false;
       internal_message('Channel socket connection was closed', close_message);
 
+      channel_socket = undefined;
+
       // Wait 5 seconds on close to see if this was a remote restart
       setTimeout(try_connection, 5000);
     };

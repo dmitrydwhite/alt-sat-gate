@@ -4,7 +4,6 @@
   "description": "node gateway for major tom",
   "main": "index.js",
   "scripts": {
-    "start": "node example/temp-server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
@@ -13,11 +12,7 @@
   "author": "dmitry@kubos.com",
   "license": "MIT",
   "dependencies": {
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
     "request": "^2.88.0",
-    "websocket": "^1.0.28",
     "ws": "^7.1.1"
   }
 }
