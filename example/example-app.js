@@ -1,11 +1,39 @@
 const url = require('url');
 
 const app = require('../index.js');
+// This is an example solution for communications between the gateway and systems.
+// It uses WebSockets, with the intention of talk to a mock system that exists
+// in a web browser tab.
+const mt_systems_channel = require('./mt-systems-channel.js');
 
 let gateway;
 
+/**
+ * This is the default export function that starts the example app.
+ *
+ * @param      {HTTPServer}  server    An HTTP Server that can be upgraded to a WebSocket server
+ * @param      {String}  host      Your Major Tom instance WebSocket url
+ * @param      {String}  token     Your Major Tom Gateway Token
+ * @param      {[String]}  username  Basic Auth User Name
+ * @param      {[String]}  password  Basic Auth Password
+ * @return     {Object}  An instance of the example app
+ */
 function example_gateway(server, host, token, username, password) {
-  gateway = app(server);
+  gateway = {
+    // Get all the methods exposed from the Major Tom Node Gateway Library
+    ...app(),
+    // Add a method to open a channel to this mission's systems
+    open_system_channel: function() {
+      const system_channel = mt_systems_channel(server);
+
+      // Now `gateway` is composed of they systems channel (above), plus all the
+      // library methods.
+      gateway = {
+        ...system_channel,
+        ...gateway,
+      };
+    },
+  };
 
   const unsent_queue = {};
 

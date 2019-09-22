@@ -10,7 +10,7 @@
   "engines": {
     "node": "11.0.x"
   },
-  "author": "white.dmitry@gmail.com",
+  "author": "dmitry@kubos.com",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.19.0",

@@ -1,6 +1,6 @@
 const WebSocketServer = require('websocket').server;
 const https = require('https');
-const internal_messager = require('./src/internal-message.js');
+const internal_messager = require('../src/internal-message.js');
 
 function get_random (low, hi) {
   return hi > low &&
@@ -55,7 +55,7 @@ function mt_system_channel(server) {
     return ws_key;
   }
 
-  function on_message(cb) {
+  function on_system_message(cb) {
     if (typeof cb !== 'function') {
       throw new Error(`System callback must be a function`);
     }
@@ -158,7 +158,7 @@ function mt_system_channel(server) {
     await_connection,
     get_connection_bus,
     get_ws_key,
-    on_message,
+    on_system_message,
     on_http_request,
   };
 }
