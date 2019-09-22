@@ -1,0 +1,18 @@
+{
+  "name": "mt-node-gateway-example",
+  "version": "1.0.0",
+  "description": "This is a small app designed to demonstrate how the Major Tom gateway library can be implemented in a JavaScript app.",
+  "main": "temp-server.js",
+  "scripts": {
+    "start": "node temp-server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "dmitry@kubos.com",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "websocket": "^1.0.30"
+  }
+}

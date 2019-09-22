@@ -112,7 +112,7 @@ function mt_system_channel(server) {
   ws_server.on('request', function (incoming) {
     const { origin, resource } = incoming;
 
-    system_name = valid_resource_request(resource);
+    last_req_system_name = valid_resource_request(resource);
 
     if (!system_name) {
       incoming.reject();
@@ -125,6 +125,8 @@ function mt_system_channel(server) {
   });
 
   ws_server.on('connect', function(connection) {
+    debugger; // Can we get the client url or metadata here?
+
     connection.on('message', function(message) {
       if (system_message_cb) {
         system_message_cb(message);
@@ -134,18 +136,20 @@ function mt_system_channel(server) {
     });
 
     connection.on('close', function() {
-      delete connection_bus[system_name];
+      delete connection_bus[last_req_system_name];
     });
 
     connection.on('error', function() {
-      delete connection_bus[system_name];
+      delete connection_bus[last_req_system_name];
     });
 
-    set_connection_timer(system_name);
+    set_connection_timer(last_req_system_name);
 
-    connection_bus[system_name] = connection;
+    connection_bus[last_req_system_name] = connection;
 
-    update_connected(system_name);
+    update_connected(last_req_system_name);
+
+    last_req_system_name = undefined;
   });
 
   if (!server) {

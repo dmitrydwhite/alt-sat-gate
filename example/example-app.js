@@ -11,34 +11,32 @@ let gateway;
 /**
  * This is the default export function that starts the example app.
  *
- * @param      {HTTPServer}  server    An HTTP Server that can be upgraded to a WebSocket server
- * @param      {String}  host      Your Major Tom instance WebSocket url
- * @param      {String}  token     Your Major Tom Gateway Token
- * @param      {[String]}  username  Basic Auth User Name
- * @param      {[String]}  password  Basic Auth Password
- * @return     {Object}  An instance of the example app
+ * @param {HTTPServer} server An HTTP Server that can be upgraded to a WebSocket server
+ * @param {String} host Your Major Tom instance WebSocket url
+ * @param {String} token Your Major Tom Gateway Token
+ * @param {[String]} username Basic Auth User Name
+ * @param {[String]} password Basic Auth Password
+ * @return {Object} An instance of the example app
  */
 function example_gateway(server, host, token, username, password) {
   gateway = {
     // Get all the methods exposed from the Major Tom Node Gateway Library
     ...app(),
-    // Add a method to open a channel to this mission's systems
-    open_system_channel: function() {
-      const system_channel = mt_systems_channel(server);
-
-      // Now `gateway` is composed of they systems channel (above), plus all the
-      // library methods.
-      gateway = {
-        ...system_channel,
-        ...gateway,
-      };
-    },
+    // Get the methods from this example systems connection implementation
+    ...mt_systems_channel(server),
   };
 
   const unsent_queue = {};
 
   const working_files = {};
 
+  /**
+   * A higher order function to send any stored, unsent commands to a recently
+   * re-connected system.
+   *
+   * @param      {String}  system_name  The system name
+   * @return     {Function}  Invoke the function when system reconnects
+   */
   function drain(system_name) {
     return function() {
       if (unsent_queue[system_name]) {
@@ -49,6 +47,13 @@ function example_gateway(server, host, token, username, password) {
     };
   }
 
+  /**
+   * The primary function to send a command to a system. If the system is connected,
+   * this will convert the command arg to a JSON string and send it over WebSocket.
+   * If not connected, this will store the JSON string in the unsent queue object.
+   * @param  {String} system_name The system name
+   * @param  {Object} command The command as a JS object
+   */
   function send_to_system(system_name, command) {
     const system_cx = gateway.get_system(system_name);
 
@@ -153,8 +158,6 @@ function example_gateway(server, host, token, username, password) {
   }
 
   gateway.connect_to_mt(host, token, username, password);
-
-  gateway.open_system_channel();
 
   gateway.on_mt_message(function(message) {
     try {

@@ -1,14 +1,16 @@
-# `temp-server.js`
+# temp-server.js
 
 This is a small app designed to demonstrate how the Major Tom gateway library can be implemented in a JavaScript app.
 
 ### To Run `temp-server.js` Locally
 
 ```sh
-$ git clone <this-repo>
-$ cd ./wip-mt-node-gateway-lib
+$ git clone <this repo>
+$ cd ./wip-mt-node-gateway-lib/
 $ npm install
-$ node example/temp-server.js
+$ cd example
+$ npm install
+$ npm start
 ```
 
 This will start the localhost web server running.
