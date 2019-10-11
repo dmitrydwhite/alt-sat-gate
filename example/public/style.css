@@ -1,0 +1,235 @@
+html {
+  background: url(https://staticshare.america.gov/uploads/2017/04/iss048e002082-orig.jpg) no-repeat center center fixed;
+  background-size: cover;
+  box-sizing: border-box;
+}
+
+/* ##### System Row ##### */
+#system-row {
+  float: left;
+  width: 100%;
+}
+
+#system-row-left {
+  /*display: flex;
+  flex-direction: column;
+  flex: 1;*/
+  width: 32vw;
+  float: left;
+}
+
+/* ####### Contents of System Row Left ####### */
+h1#system-name-header {
+  font-family: 'Michroma', sans-serif;
+  color: lightgreen;
+  opacity: 0.83;
+  margin-bottom: 0;
+}
+
+.top-line-links {
+  font-family: 'Michroma', sans-serif;
+  padding: 0 12px;
+  color: lightgreen;
+  opacity: 0.83;
+}
+
+#all-systems {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  /*height: 100%;*/
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.icon-width {
+  width: 96px;
+  text-align: center;
+}
+
+.values-col {
+  justify-content: flex-start;
+  text-align: right;
+}
+
+.names-col {
+  justify-content: flex-start;
+  flex: 1;
+}
+
+.system_display_container {
+  background-color: grey;
+  opacity: 0.83;
+  font-family: 'Nova Mono', monospace;
+  font-size: 0.5rem;
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  margin: 4px 8px;
+  border: 1px solid lightblue;
+  flex: 1;
+}
+
+.subsystem-display {
+  margin: 0;
+  padding: 2px;
+}
+
+.green-text {
+  font-family: 'Michroma', sans-serif;
+  font-size: 14px;
+  color: lightgreen;
+  opacity: 0.93;
+}
+
+.right-align {
+  text-align: right;
+}
+
+#system-row-middle {
+  margin-top: 22px;
+  margin-left: 12px;
+  float: left;
+  width: 28%;
+}
+
+#system-row-right {
+  margin-top: 22px;
+  margin-left: 12px;
+  float: left;
+  min-width: 28%;
+}
+
+.files-window {
+  padding: 12px;
+  background-color: black;
+  opacity: 0.54;
+  border: 2px solid purple;
+  border-radius: 8px;
+  min-height: 300px;
+}
+
+h3#files-title {
+  margin-top: 0;
+  font-family: 'Michroma', sans-serif;
+  color: lightgreen;
+  opacity: 0.83 !important;
+  z-index: 1000;
+}
+
+.file-upload-button {
+  font-family: 'Michroma', sans-serif;
+  color: lightsteelblue;
+  opacity: 1;
+  cursor: pointer;
+  padding-left: 4px;
+  padding-right: 4px;
+  text-decoration: none;
+}
+
+a.file-upload-button:visited {
+  font-family: 'Michroma', sans-serif;
+  color: lightgreen;
+  opacity: 1;
+  cursor: pointer;
+  padding-left: 4px;
+  padding-right: 4px;
+  text-decoration: none;
+}
+
+/* ##### Messaging Row ##### */
+#message-row {
+  display: flex;
+  flex-direction: row;
+}
+
+#message-container {
+  background-color: black;
+  opacity: 0.54;
+  font-family: 'Nova Mono', monospace;
+  overflow-y: scroll;
+  font-size: 1rem;
+  color: white;
+  flex: 1;
+  height: 20vh;
+  padding: 8px;
+  border-radius: 8px;
+  margin: 4px 8px;
+}
+
+.message-incoming {
+  border: 2px solid blue;
+}
+
+.message-outgoing {
+  border: 2px solid green;
+}
+
+/* ##### Bottom Row ##### */
+#bottom-row {
+  display: flex;
+  flex-direction: row;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+#bottom-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex: 1;
+}
+
+/* ####### Contents of bottom-left ####### */
+#system_clock_system_uptime, #utc-time, #display-container {
+  font-family: 'Nova Mono', monospace;
+  font-size: 18px;
+  color: lightgreen;
+  opacity: 0.83;
+  padding: 0;
+  margin: 0;
+}
+
+button#att-reconnect-button {
+  font-family: 'Nova Mono', monospace;
+  font-size: 12px;
+  color: red;
+  opacity: 1;
+  cursor: pointer;
+}
+
+#bottom-right {
+  flex: 1;
+  flex-direction: row;
+}
+
+/* ####### Contents of bottom-right ####### */
+#freeform-input {
+  margin: 16px;
+  padding: 4px;
+  width: calc(100% - (2 * 16px + 2 * 4px));
+  background-color: black;
+  border: 3px solid lightblue;
+  max-height: 20vh;
+  opacity: 0.54;
+  border-radius: 8px;
+  color: lightgreen;
+  font-family: 'Nova Mono', monospace;
+  vertical-align: top;
+  font-size: 16px;
+}
+
+#freeform-input:focus {
+  outline: none;
+}

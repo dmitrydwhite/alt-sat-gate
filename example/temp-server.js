@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const url = require('url');
+const path = require('path');
+const fs = require('fs');
 
 const example_gateway = require('./example-app');
 
@@ -67,6 +69,27 @@ const redirect_to_status_script = `
     }, 800);
   </script>
 `;
+const launch_sat_button = `
+  <script>
+    var launch_button = document.createElement("button");
+    var doc_body = document.getElementsByTagName("body")[0];
+
+    launch_button.innerHTML = "Launch Satellite";
+    launch_button.addEventListener("click", function launch_sat_in_new_tab() {
+      var temp_link = document.createElement("a");
+
+      temp_link.href = "/satellite";
+      temp_link.target = "_blank";
+      temp_link.innerHTML = ".";
+
+      doc_body.append(temp_link);
+      temp_link.click();
+      temp_link.remove();
+    });
+
+    doc_body.append(launch_button);
+  </script>
+`;
 let exposed_gateway;
 let memory_token;
 let auth_host;
@@ -76,6 +99,34 @@ let mem_user;
 let mem_pass;
 
 app.use(bodyParser.json({ strict: true }));
+
+app.get('/satellite', function (request, response) {
+  response.sendFile(path.join(__dirname, '/public/index.html'));
+});
+
+app.get('/public/style.css', function (request, response) {
+  response.sendFile(path.join(__dirname, '/public/style.css'));
+});
+
+app.get('/public/sat-module/:js_file', function (request, response) {
+  const requested = request.params.js_file;
+
+  if (fs.existsSync(path.join(__dirname, '/public/sat-module', requested))) {
+    response.sendFile(path.join(__dirname, '/public/sat-module', requested));
+  } else {
+    response.status(404).send();
+  }
+});
+
+app.get('/public/:js_file', function (request, response) {
+  const requested = request.params.js_file;
+
+  if (fs.existsSync(path.join(__dirname, '/public', requested))) {
+    response.sendFile(path.join(__dirname, '/public', requested));
+  } else {
+    response.status(404).send();
+  }
+});
 
 app.get('/pinCode', function(request, response) {
   if (exposed_gateway) {
@@ -105,10 +156,14 @@ app.get('/connect', function(request, response) {
       return;
     }
 
-    if (!exposed_gateway || (exposed_gateway && !exposed_gateway.is_connected_to_mt())) {
+    if (!exposed_gateway) {
       exposed_gateway = example_gateway(app_server, host, token);
     }
-    
+
+    if (exposed_gateway && !exposed_gateway.is_connected_to_mt()) {
+      exposed_gateway.connect_to_mt(host, token);
+    }
+
     response.status(200).send(`<p ${p_style}>Connecting...</p>${redirect_to_status_script}`);
   } else {
     response.status(200).send(`<p ${p_style}>Not Connected</p>`);
@@ -120,7 +175,7 @@ app.get('/disconnect', function(request, response) {
     exposed_gateway.disconnect_from_mt();
   }
 
-  exposed_gateway = undefined;
+  // exposed_gateway = undefined;
 
   response.status(200).send(`${gateway_status_info_display}<p ${p_style}>Disconnected</p>${button_actions_bank}`);
 });
@@ -138,6 +193,7 @@ app.get('/status', function(request, response) {
     ${gateway_status_info_display}
     <p ${p_style}>${connected_state}</p>
     ${button_actions_bank}
+    ${connected_state === 'Connected' ? launch_sat_button : ''}
   `);
 });
 

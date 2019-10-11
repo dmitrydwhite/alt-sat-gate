@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Major Tom Mock Satellite</title>
+  <link href="https://fonts.googleapis.com/css?family=Michroma|Nova+Mono|Nova+Square&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="./public/style.css" rel="stylesheet">
+  <link rel="stylesheet" href="./public/camera_controls.css">
+</head>
+<body>
+  <div id="system-row">
+    <div id="system-row-left">
+      <div id="system-row-left-top">
+        <h1 id="system-name-header">
+          Locating Satellite...
+        </h1>
+        <p id="system_clock_system_uptime">SYSTEM STARTING...</p>
+        <p id="utc-time">Retrieving Time...</p>
+        <div id="display-container"></div>
+
+        <div>
+          <a href="#" class="top-line-links" id="rename-sat">Rename</a>
+          <a href="\satellite" target="blank" class="top-line-links" id="add-another-sat">Add Another</a>
+          <a href="#" class="top-line-links">More Info</a>
+        </div>
+      </div>
+      <div id="all-systems">Loading Systems...</div>
+    </div>
+
+    <div id="system-row-middle">
+      <h3 id="files-title">Files Received</h3>
+      <hr>
+      <div class="files-window">
+        <div id="uplinked-files-display"></div>
+      </div>
+    </div>
+
+    <div id="system-row-right">
+      <h3 id="files-title">Files On Board</h3>
+      <hr>
+      <div class="files-window">
+        <label id="create-file" class="file-upload-button">
+          <input id="upload-file-input" type="file" style="display: none;" />
+          + File from Computer
+        </label>
+        <a href="#" class="file-upload-button" id="capture-with-camera">+ File from Camera</a>
+        <hr>
+        <div id="file-bus-display"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="clear:both;"></div>
+
+  <div id="message-row">
+    <div id="message-container" class="message-incoming">
+      <pre id="incoming-message-formatted"></pre>
+    </div>
+    <div id="message-container" class="message-outgoing">
+      <pre id="outgoing-message-formatted"></pre>
+    </div>
+  </div>
+</body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.js" integrity="sha256-H9jAz//QLkDOy/nzE9G4aYijQtkLt9FvGmdUTwBk6gs=" crossorigin="anonymous"></script>
+
+<script>
+</script>
+
+<script type="module" src="./public/sat-module/create.js"></script>
+<script type="module" src="./public/camera_controls.js"></script>
+
+<script type="module">
+  import create_satellite from './public/sat-module/create.js';
+  import start_camera from './public/camera_controls.js';
+
+  function cool_text_display(raw_text, elem, cb) {
+    if (!raw_text) return;
+
+    const display_text = decodeURIComponent(raw_text);
+
+    let cursor = 0;
+
+    const cool_display_interval = setInterval(function() {
+      if (cursor >= display_text.length) {
+        clearInterval(cool_display_interval);
+        elem.innerHTML = display_text;
+
+        return cb && typeof cb === 'function' ? cb() : undefined;
+      }
+
+      elem.innerHTML = `${display_text.slice(0, cursor)}█`;
+      cursor += 1;
+    }, 65);
+  }
+
+  function key(key_name) {
+    return `${page_sat_name}_${key_name}`;
+  }
+
+  function uniq(arr) {
+    return Object.keys(arr.reduce(function(accum, curr) {
+      accum[curr] = accum[curr] ? accum[curr] + 1 : 1;
+
+      return accum;
+    }, {}));
+  }
+
+  const time_span = document.getElementById('utc-time');
+  const name_h1 = document.getElementById('system-name-header');
+  const rename_sat_link = document.getElementById('rename-sat');
+  const file_upload_input = document.getElementById('upload-file-input');
+  const file_capture_link = document.getElementById('capture-with-camera');
+  let file_cap_counter = 0;
+
+  let current_time = '';
+  let cursor = 0;
+  let is_refresh;
+  let page_sat_name;
+
+  //////////////////////////////////
+  // Code for Displaying UTC Time //
+  //////////////////////////////////
+  function time_done() {
+    setInterval(function() {
+      const tm = moment().utc().format();
+
+      if (tm !== current_time) {
+        time_span.innerHTML = tm;
+      }
+    }, 250);
+  }
+
+  /**
+   * This makes the cool cursor readout of the time when the user loads the page.
+   */
+  const cursor_effect = setInterval(function() {
+    const tm = moment().utc().format();
+
+    if (cursor >= tm.length) {
+      clearInterval(cursor_effect);
+      time_done();
+      time_span.innerHTML = tm;
+
+      return;
+    }
+
+    time_span.innerHTML = `${tm.slice(0, cursor)}█`;
+    cursor += 1;
+  }, 65);
+
+  ///////////////////////////////////////
+  // Here we set up the Page Satellite //
+  ///////////////////////////////////////
+
+  // First check the url search param to see if we have a satellite name
+  const url_searchparams = (new URL(window.location.href)).searchParams;
+  const url_name = url_searchparams && url_searchparams.get('sat_name');
+  const current_name_list = (localStorage.getItem('name_list') || '').split(',');
+
+  if (!url_name) {
+    // We don't have one.  This is not a refresh, so let's set the sat name on the url and into local storage:
+    is_refresh = false;
+    page_sat_name = prompt('Name your demo satellite') || 'Default Mock Sat';
+    url_searchparams.set('sat_name', page_sat_name);
+
+    window.location.search = url_searchparams.toString();
+  } else {
+    page_sat_name = url_name;
+
+    // We do have a name in the url. Check to see if we know about it yet.
+    if (current_name_list.indexOf(url_name) === -1) {
+      localStorage.setItem('name_list', [...current_name_list, page_sat_name].join(','));
+      is_refresh = false;
+    } else {
+      is_refresh = true;
+    }
+  }
+
+  document.title = `🛰️ ${page_sat_name}`;
+
+  cool_text_display(page_sat_name, name_h1);
+
+  // Create the satellite code instance:
+  const page_sat = create_satellite('mock');
+  // Get references to our container elements once if possible
+  const incoming_message_container = document.getElementById('incoming-message-formatted');
+  const outgoing_message_container = document.getElementById('outgoing-message-formatted');
+
+  page_sat.set_name(page_sat_name);
+  page_sat.launch(`ws://localhost:8080/000000gateway/${page_sat_name}`, !is_refresh);
+
+  if (is_refresh) {
+    const retrieved_incoming = JSON.parse(localStorage.getItem(key('incoming_msgs')) || '[]');
+    const retrieved_outgoing = JSON.parse(localStorage.getItem(key('outgoing_msgs')) || '[]');
+
+    if (retrieved_incoming.length > 0) {
+      incoming_message_container.innerText = retrieved_incoming.join('\n\n');
+    }
+
+    if (retrieved_outgoing.length > 0) {
+      outgoing_message_container.innerText = retrieved_outgoing.join('\n\n');
+    }
+  }
+
+  ////////////////////////////////////////
+  // Here we handle receiving a Command //
+  ////////////////////////////////////////
+  function handle_command(cmd) {
+    const stored_commands = localStorage.getItem(key('commands')) || '[]';
+    const prev_commands = JSON.parse(stored_commands);
+
+  }
+
+  //////////////////////////////////////////
+  // Here we set up the Message Listeners //
+  //////////////////////////////////////////
+  function display_last_message_cool(new_msg, prev_msgs, elem) {
+    const len = new_msg.length;
+    let cursor = 0;
+    let new_text = '';
+
+    const cool_msg_interval = setInterval(function () {
+      if (cursor >= len) {
+        clearInterval(cool_msg_interval);
+        elem.innerHTML = `${new_msg}\n\n${prev_msgs}`;
+
+        return;
+      }
+
+      const new_text = new_msg.slice(0, cursor);
+
+      elem.innerHTML = `${new_text}█\n${prev_msgs}`;
+      cursor += 1;
+    }, 15);
+  }
+
+  function handle_message(msg_json) {
+    const stored_messages = localStorage.getItem(key('incoming_msgs')) || '[]';
+    const prev_messages = JSON.parse(stored_messages);
+    const current_msg = `${moment().utc().format()}\nGATEWAY SAYS:\n${msg_json}`;
+    const incoming_msgs = [current_msg, ...prev_messages].slice(0, 20);
+
+    localStorage.setItem(key('incoming_msgs'), JSON.stringify(incoming_msgs));
+
+    incoming_message_container.innerHTML = incoming_msgs.join('\n\n');
+
+    // display_last_message_cool(current_msg, incoming_message_container.innerHTML, incoming_message_container);
+  }
+
+  page_sat.on_incoming_message(function(msg_json) {
+    const parsed_message = JSON.parse(msg_json);
+
+    if (parsed_message.type === 'command') {
+      handle_command(parsed_message);
+    }
+
+    handle_message(msg_json);
+  });
+
+  page_sat.on_outgoing_message(function(msg_json) {
+    const stored_messages = localStorage.getItem(key('outgoing_msgs')) || '[]';
+    const prev_messages = JSON.parse(stored_messages);
+    const current_msg = `${moment().utc().format()}\nI SAY:\n${msg_json}`;
+    const outgoing_msgs = [current_msg, ...prev_messages].slice(0, 20);
+
+    localStorage.setItem(key('outgoing_msgs'), JSON.stringify(outgoing_msgs));
+
+    outgoing_message_container.innerHTML = outgoing_msgs.join('\n\n');
+
+    // display_last_message_cool(current_msg, outgoing_message_container.innerHTML, outgoing_message_container);
+  });
+
+  /////////////////////////////////////////////////////////////////////////////////
+  // Here we handle getting a new file, either from the user or from the gateway //
+  /////////////////////////////////////////////////////////////////////////////////
+  page_sat.on_file_added(function(files) {
+    document.getElementById('file-bus-display').innerHTML = files.map(function (file_obj) {
+      if (file_obj.for_system) return '';
+
+      return `
+        <p class="subsystem-display green-text">• ${file_obj.name}</p>
+        <p class="subsystem-display green-text right-align">${file_obj.size}B</p>
+        <hr style="color: lightgreen;">
+      `;
+    }).join('');
+
+    document.getElementById('uplinked-files-display').innerHTML = files.map(function (file_obj) {
+      if (!file_obj.for_system) return '';
+
+      return `
+        <p class="subsystem-display green-text">• ${file_obj.name}</p>
+        <p class="subsystem-display green-text right-align">${file_obj.size}B</p>
+        <hr style="color: lightgreen;">
+      `;
+    });
+  });
+
+  ///////////////////////////////////////////////////////////////
+  // Here we check on and display how our "satellite" is doing //
+  ///////////////////////////////////////////////////////////////
+  function parse_received(rec_key, val) {
+    const k = {
+      battery_battery_charging: function (x) { return x ? 'CHARGING' : 'DRAINING' },
+      battery_percentage: function (x) { return `${x * 100}`; },
+      radio_radio_available_bands: function (x) {
+        let ret = '';
+
+        while (x.length) {
+          const char = x.slice(0, 3);
+
+          x = x.slice(3);
+          ret = `${ret}${String.fromCharCode(char)}`;
+        }
+
+        return ret;
+      },
+      radio_radio_band: function (x) { return x || 'None'; },
+      radio_radio_frequency: function (x) { return x || '0.00'; },
+      radio_radio_status: function(x) { return x ? 'ON' : 'OFF'; },
+      solar_panel_actuating: function(x) { return (x === 2 && 'STOWING') || (x === 1 && 'DEPLOYING') || x; },
+      solar_panel_deployed: function(x) { return x ? 'DEPLOYED' : 'STOWED'; },
+      system_clock_system_uptime: function(x) {
+        const d = moment.duration(x * 1000);
+
+        function pp(x) { return `${x}`.length === 1 ? `0${x}` : `${x}`; }
+
+        return `D${pp(d.days())} - ${pp(d.hours())}:${pp(d.minutes())}:${pp(d.seconds())} since SYSTEM RESTART`;
+      },
+    };
+
+    function avail(x) { return x ? 'YES' : 'NO'; }
+
+    return (k[rec_key] && k[rec_key](val)) ||
+      rec_key.indexOf('available') > 1 && avail(val) ||
+      val ||
+      '░';
+  }
+
+  function create_system_display(system_key) {
+    const icons = {
+      battery: 'battery_std',
+      buzzer: 'waves',
+      camera: 'photo_camera',
+      connection: 'wifi',
+      geo: 'language',
+      radio: 'radio',
+      solar: 'grid_on',
+    };
+    const titles = { solar: 'solar panels' };
+    const outer_container = document.createElement('div');
+    const icon_container = document.createElement('div');
+    const field_names_container = document.createElement('div');
+    const field_values_container = document.createElement('div');
+    const system_icon = document.createElement('p');
+    const system_title = document.createElement('p');
+
+    system_icon.innerHTML = `<i class="material-icons">${icons[system_key]}</i>`;
+    system_icon.classList.add('subsystem-display');
+
+    system_title.innerHTML = titles[system_key] || system_key;
+    system_title.classList.add('subsystem-display');
+
+    icon_container.classList.add('flex-col', 'icon-width');
+    icon_container.append(system_icon, system_title);
+
+    field_names_container.classList.add('flex-col', 'names-col');
+    field_names_container.id = `${system_key}-names-list`;
+
+    field_values_container.classList.add('flex-col', 'values-col');
+    field_values_container.id = `${system_key}-values-list`;
+
+    outer_container.classList.add('system_display_container', 'flex-row');
+    outer_container.id = `system_container_${system_key}`;
+    outer_container.append(icon_container, field_names_container, field_values_container);
+
+    document.getElementById('all-systems').appendChild(outer_container);
+
+    return outer_container;
+  }
+
+  function create_subsystem_display(subsystem_key) {
+    const [system, ...detail] = uniq(subsystem_key.split('_'));
+    const found_container = document.getElementById(`system_container_${system}`);
+    const system_container = found_container || create_system_display(system);
+    const title_node = document.createElement('p');
+    const value_node = document.createElement('p');
+    const name_col = [...system_container.children].find(el => el.id === `${system}-names-list`);
+    const value_col = [...system_container.children].find(el => el.id === `${system}-values-list`);
+
+    title_node.classList.add('subsystem-display');
+    title_node.innerHTML = `${detail.join(' ')}`;
+
+    value_node.id = subsystem_key;
+    value_node.classList.add('subsystem-display');
+
+    name_col.append(title_node);
+    value_col.append(value_node);
+
+    return value_node;
+  }
+
+  const update_hardware_status_display = next_hardware_update();
+  function next_hardware_update() {
+    let current_flat_state = {};
+
+    function generate_flat_state(deep) {
+      const ret = {};
+
+      function flatten_obj(value, keys_arr) {
+        if (typeof value === 'object' && !Array.isArray(value)) {
+          const base_keys = Object.keys(value);
+
+          base_keys.forEach(function(key_name) {
+            flatten_obj(value[key_name], [...(keys_arr || []), key_name]);
+          });
+        } else {
+          ret[keys_arr.join('_')] = value;
+        }
+      }
+
+      flatten_obj(deep);
+
+      return ret;
+    }
+
+    function handle_update(update) {
+      const next_update = generate_flat_state(update);
+
+      Object.keys(next_update).forEach(function(state_key) {
+        const next_val = next_update[state_key];
+
+        if (current_flat_state[state_key] !== next_val) {
+          const found_element = document.getElementById(state_key);
+          const doc_element = found_element || create_subsystem_display(state_key);
+          const innerText = parse_received(state_key, next_val);
+
+          cool_text_display(innerText, doc_element);
+
+
+          // doc_element.innerHTML = parse_received(state_key, next_val)
+          current_flat_state[state_key] = next_val;
+
+          localStorage.setItem(key(state_key), next_val);
+        }
+      });
+    }
+
+    return handle_update;
+  }
+
+  function display_gateway_cx_status() {
+    const is_cx = page_sat.is_connected();
+    const cx_display = document.getElementById('display-container');
+
+    if (is_cx) {
+      cx_display.innerHTML = 'Good Connection to Gateway';
+    } else {
+      const reconnect = document.createElement('button');
+
+      reconnect.id = 'att-reconnect-button';
+      reconnect.innerText = 'Gateway CX Error: Attempt Reconnect';
+      reconnect.addEventListener('click', function try_reconnect () {
+        reconnect.removeEventListener('click', try_reconnect);
+
+        page_sat.launch(`ws://localhost:8080/000000gateway/${page_sat_name}`);
+      });
+
+      cx_display.innerHTML = '';
+      cx_display.append(reconnect);
+    }
+  }
+
+  update_hardware_status_display(JSON.parse(page_sat.get_hardware_state()));
+
+  setInterval(function() {
+    const hardware_json = page_sat.get_hardware_state();
+    const hardware_state = JSON.parse(hardware_json);
+
+    display_gateway_cx_status();
+
+    update_hardware_status_display(hardware_state);
+  }, 5000);
+
+  //////////////////////////////////////////////
+  // Here we handle the user uploading a file //
+  //////////////////////////////////////////////
+  file_upload_input.addEventListener('change', function (event) {
+    const File = event && event.target && event.target.files && event.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (evt) {
+      const result = evt && evt.target && evt.target.result;
+      const FileBuffer = new Uint8Array(result);
+
+      page_sat.add_file(FileBuffer, File.name);
+    };
+
+    reader.readAsArrayBuffer(File);
+  });
+
+  file_capture_link.addEventListener('click', function (event) {
+    event.preventDefault();
+
+    try {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function (stream) {
+          start_camera({
+            stream,
+            on_capture: function (file_buf) {
+              file_cap_counter += 1;
+
+              page_sat.add_file(file_buf, `captured_image_${file_cap_counter}.png`);
+            }
+          });
+        })
+        .catch(function (err) {
+          console.log(err);
+        });
+    } catch (err) {
+      console.log('catch block');
+      console.log(err);
+    }
+  });
+
+  ///////////////////////////////////////////
+  // Here we handle renaming the satellite //
+  ///////////////////////////////////////////
+  rename_sat_link.addEventListener('click', function (event) {
+    event.preventDefault();
+
+    const new_sat_name = prompt(
+      'Renaming Satellite will cause a system restart.\n\nRename your demo satellite'
+    ) || page_sat_name;
+
+    if (new_sat_name !== page_sat_name) {
+      const new_search = new URLSearchParams();
+
+      new_search.append('sat_name', new_sat_name);
+      window.location.search = new_search.toString();
+      document.title = `🛰️ ${new_sat_name}`;
+    }
+  });
+</script>
+</html>

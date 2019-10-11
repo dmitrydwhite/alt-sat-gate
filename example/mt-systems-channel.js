@@ -47,7 +47,7 @@ function mt_system_channel(server) {
     return system_name;
   }
 
-  function get_connection_bus(cx) {
+  function get_system(cx) {
     return connection_bus[cx];
   }
 
@@ -106,15 +106,17 @@ function mt_system_channel(server) {
   }
 
   ws_server.on('connection', function (cx_obj) {
-    console.log('heard event: CONNECTION');
+    console.log('heard event: CONNECTION', cx_obj);
   });
 
   ws_server.on('request', function (incoming) {
+    console.log('heard event: REQUEST', incoming);
+
     const { origin, resource } = incoming;
 
     last_req_system_name = valid_resource_request(resource);
 
-    if (!system_name) {
+    if (!last_req_system_name) {
       incoming.reject();
       internal_message(
         `${new Date()} : Connection from origin ${origin} rejected`
@@ -125,7 +127,11 @@ function mt_system_channel(server) {
   });
 
   ws_server.on('connect', function(connection) {
-    debugger; // Can we get the client url or metadata here?
+    console.log('heard event: CONNECT', connection);
+    // Keep a reference to the system name in scope.
+    // This is a less-than-ideal way to pass around the name obtained from the
+    // last connection url:
+    let system_connection = last_req_system_name;
 
     connection.on('message', function(message) {
       if (system_message_cb) {
@@ -136,18 +142,18 @@ function mt_system_channel(server) {
     });
 
     connection.on('close', function() {
-      delete connection_bus[last_req_system_name];
+      delete connection_bus[system_connection];
     });
 
     connection.on('error', function() {
-      delete connection_bus[last_req_system_name];
+      delete connection_bus[system_connection];
     });
 
-    set_connection_timer(last_req_system_name);
+    set_connection_timer(system_connection);
 
-    connection_bus[last_req_system_name] = connection;
+    connection_bus[system_connection] = connection;
 
-    update_connected(last_req_system_name);
+    update_connected(system_connection);
 
     last_req_system_name = undefined;
   });
@@ -160,9 +166,10 @@ function mt_system_channel(server) {
 
   return {
     await_connection,
-    get_connection_bus,
+    get_system,
     get_ws_key,
     on_system_message,
+    on_system_connected: await_connection,
     on_http_request,
   };
 }

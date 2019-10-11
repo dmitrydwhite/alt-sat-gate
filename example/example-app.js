@@ -30,6 +30,9 @@ function example_gateway(server, host, token, username, password) {
 
   const working_files = {};
 
+  const file_retrieve_queue = [];
+  let is_retrieving_file = false;
+
   /**
    * A higher order function to send any stored, unsent commands to a recently
    * re-connected system.
@@ -75,6 +78,11 @@ function example_gateway(server, host, token, username, password) {
     }
   }
 
+  /**
+   * Handles receiving a file chunk from a system. Sends the complete file and
+   * tidies up the queue when a chunk marked "complete" is received.
+   * @param  {Object} obj The object containing the file chunk, along with system and file name
+   */
   function handle_file_chunk(obj) {
     const file_key = `_n${obj.system}_${obj.file_name}`.replace('-', '#');
 
@@ -97,13 +105,134 @@ function example_gateway(server, host, token, username, password) {
     working_files[file_key].push(Uint8Array.from(obj.chunk));
   }
 
-  function manage_command_on_gateway(msg) {
-    const { fields, system, type } = msg;
+  const sending_files_in_progress = {};
+
+  function send_file_to_system(system_name, filename, id, file_buffer, available_for_downlink) {
+    const buffer_array = [...file_buffer];
+
+    sending_files_in_progress[`${id}_${filename}`] = buffer_array;
+    sending_files_in_progress[`${id}_${filename}`].checksum = 0;
+
+    send_to_system(
+      system_name,
+      {
+        id,
+        type: 'trigger_file_uplink',
+        fields: [
+          { name: 'filename', value: filename },
+          { name: 'chunks', value: Math.ceil(buffer_array.length / 5000) },
+          { name: 'available_for_downlink', value: available_for_downlink },
+        ],
+        system: system_name,
+      }
+    );
+  }
+
+  function push_update(command_obj) {
+    const command = command_obj.command || command_obj;
+    const { id, payload, status } = command;
+    const [key_name, checksum, filename] = payload.split(' ');
+    const [encoded_system_name] = status.split(' ');
+    const system_name = decodeURIComponent(encoded_system_name);
+    let chunk_to_send;
+    let new_checksum;
+
+    if (sending_files_in_progress[key_name].checksum !== Number(checksum)) {
+      chunk_to_send = 'uplink_error';
+
+      return gateway.to_mt(JSON.stringify({
+        type: 'command_update',
+        command: {
+          id,
+          errors: 'File uplink checksum mismatch in uplink from gateway to satellite',
+          state: 'failed',
+          system: system_name,
+        },
+      }));
+    }
+
+    if (sending_files_in_progress[key_name].length === 0) {
+      delete sending_files_in_progress[key_name];
+      chunk_to_send = 'uplink_complete';
+    } else {
+      chunk_to_send = sending_files_in_progress[key_name].slice(0, 5000);
+      new_checksum = chunk_to_send.reduce(function (accum, curr) { return accum + curr; }) % 10;
+
+      sending_files_in_progress[key_name] = sending_files_in_progress[key_name].slice(5000);
+      sending_files_in_progress[key_name].checksum = new_checksum;
+    }
+
+
+    send_to_system(system_name, {
+      id,
+      type: 'reserved_file_uplink_chunk',
+      chunk: chunk_to_send,
+      file_key: key_name,
+      filename: filename || payload,
+      system: system_name,
+    });
+  }
+
+  /**
+   * Check if this message from a satellite is an update to a file uplink
+   * @param  {Object} msg_obj The object received from the satellite
+   * @return {Boolean} Whether or not we should push another file update to the system.
+   */
+  function is_uplink_update(msg_obj) {
+    if (
+      !msg_obj.command ||
+      !msg_obj.command.payload ||
+      !(sending_files_in_progress[msg_obj.command.payload] || sending_files_in_progress[msg_obj.command.payload.split(' ')[0]])
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Most commands received by the gateway may simply be passed along by the gateway
+   * to the destination system. However, some commands require a bit more management
+   * at the gateway layer. This function identifies those commands
+   * @param  {[type]} msg [description]
+   * @return {[type]} [description]
+   */
+  function manage_command_on_gateway(msg, g_d_p) {
+    const { id, fields, filename, system, type } = msg;
 
     if (type === 'uplink_file') {
-      const gateway_download_path = (fields.find(function(field) {
+      const gateway_download_path = g_d_p || (fields.find(function(field) {
         return field.name === 'gateway_download_path';
       }) || {}).value;
+      const file_name = filename || (fields.find(function(field) {
+        return field.name === 'filename';
+      }) || {}).value;
+      const available_for_downlink = (fields.find(function(field) {
+        return field.name === 'available_for_downlink';
+      }) || {}).value;
+
+      if (is_retrieving_file) {
+        file_retrieve_queue.push({
+          id,
+          system,
+          type,
+          gateway_download_path,
+          available_for_downlink,
+          filename: file_name
+        });
+
+        gateway.to_mt(JSON.stringify({
+          type: 'command_update',
+          command: {
+            ...msg,
+            state: 'preparing_on_gateway',
+          },
+        }));
+
+        return;
+      }
+
+      is_retrieving_file = true;
 
       gateway.to_mt(JSON.stringify({
         type: 'command_update',
@@ -113,20 +242,28 @@ function example_gateway(server, host, token, username, password) {
         },
       }));
 
-      if (!gateway_download_path) {
+      if (!gateway_download_path || !file_name) {
+        if (file_retrieve_queue.length > 0) {
+          const next_file = file_retrieve_queue.shift();
+
+          manage_command_on_gateway(next_file, next_file.gateway_download_path);
+        } else {
+          is_retrieving_file = false;
+        }
+
         return gateway.to_mt(JSON.stringify({
           type: 'command_update',
           command: {
             ...msg,
             state: 'failed',
-            errors: ['Missing value for required field gateway_download_path']
-          }
+            errors: [`Both gateway_download_path and filename fields must be present on command`],
+          },
         }));
       }
 
-      gateway.on_file_download(function(chunk, done) {
-        let chunks = Buffer.from([]);
+      let chunks = Buffer.from([]);
 
+      gateway.on_file_download(function(chunk, done) {
         if (chunk instanceof Error) {
           console.log('File download failed', chunk);
 
@@ -142,14 +279,20 @@ function example_gateway(server, host, token, username, password) {
         }
 
         if (done) {
-          console.log('file done');
-          console.log(chunks);
-          console.log(chunks.buffer);
+          // TODO: Give the system a command that adds the file
+          send_file_to_system(system, file_name, id, chunks, available_for_downlink);
+
+          if (file_retrieve_queue.length > 0) {
+            const next_file = file_retrieve_queue.shift();
+
+            manage_command_on_gateway(next_file, next_file.gateway_download_path);
+          } else {
+            is_retrieving_file = false;
+          }
 
           return;
         }
 
-        console.log(chunk);
         chunks = Buffer.concat([chunks, chunk]);
       });
 
@@ -198,6 +341,32 @@ function example_gateway(server, host, token, username, password) {
       console.log(message);
 
       return;
+    }
+
+    if (msg.type === 'command_definitions_update') {
+      const definitions = msg.command_definitions && msg.command_definitions.definitions;
+      const needs_uplink_file = Object.keys(definitions || {}).indexOf('uplink_file') === -1;
+
+      if (needs_uplink_file) {
+        msg.command_definitions.definitions = {
+          ...definitions,
+          uplink_file: {
+            display_name: 'uplink file (Generated)',
+            description: 'uplink_file Command Automatically Generated by Gateway',
+            fields: [
+              { name: 'gateway_download_path', type: 'string' },
+              { name: 'filename', type: 'string' },
+              { name: 'available_for_downlink', type: 'number', range: [0, 1], default: 0 },
+            ],
+          },
+        };
+
+        return gateway.to_mt(JSON.stringify(msg));
+      }
+    }
+
+    if (msg.type === 'command_update' && is_uplink_update(msg)) {
+      push_update(msg);
     }
 
     gateway.to_mt(message_string);
