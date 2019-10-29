@@ -55,6 +55,10 @@ function mt_system_channel(server) {
     return ws_key;
   }
 
+  /**
+   * Set a callback to execute when a message from a system is received.
+   * @param {Function} cb Callback function to run when the gateway receives a message from a system
+   */
   function on_system_message(cb) {
     if (typeof cb !== 'function') {
       throw new Error(`System callback must be a function`);
@@ -110,8 +114,6 @@ function mt_system_channel(server) {
   });
 
   ws_server.on('request', function (incoming) {
-    console.log('heard event: REQUEST', incoming);
-
     const { origin, resource } = incoming;
 
     last_req_system_name = valid_resource_request(resource);
@@ -127,7 +129,6 @@ function mt_system_channel(server) {
   });
 
   ws_server.on('connect', function(connection) {
-    console.log('heard event: CONNECT', connection);
     // Keep a reference to the system name in scope.
     // This is a less-than-ideal way to pass around the name obtained from the
     // last connection url:

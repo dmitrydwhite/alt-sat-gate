@@ -36,9 +36,8 @@ function example_gateway(server, host, token, username, password) {
   /**
    * A higher order function to send any stored, unsent commands to a recently
    * re-connected system.
-   *
-   * @param      {String}  system_name  The system name
-   * @return     {Function}  Invoke the function when system reconnects
+   * @param {String} system_name  The system name
+   * @return {Function}
    */
   function drain(system_name) {
     return function() {
@@ -279,7 +278,6 @@ function example_gateway(server, host, token, username, password) {
         }
 
         if (done) {
-          // TODO: Give the system a command that adds the file
           send_file_to_system(system, file_name, id, chunks, available_for_downlink);
 
           if (file_retrieve_queue.length > 0) {

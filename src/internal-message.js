@@ -44,23 +44,34 @@ function internal_messager(cb) {
     }
   }
 
-  function internal_message(str, error) {
-    try {
-      drain_internal(JSON.stringify({
-        type: 'Internal',
-        message: `${str}`,
-        timestamp: Date.now(),
-        error,
-      }));
-    } catch (e) {
-      drain_internal(
-        'Could not parse JSON, attempting native messages: initial message, initial error, caught error'
-      );
+  function internal_message(str, received_error) {
+    let message;
+    let error;
 
-      drain_internal(str);
-      drain_internal(error);
-      drain_internal(e.toString());
+    try {
+      message = JSON.stringify(str);
+    } catch (ignore) {
+      message = `${str}`;
     }
+
+    try {
+      error = JSON.stringify(received_error);
+    } catch (ignore) {
+      if (received_error) {
+        if (received_error instanceof Error) {
+          error = received_error.message || received_error.error;
+        } else {
+          error = received_error;
+        }
+      }
+    }
+
+    drain_internal({
+      type: 'Internal',
+      message,
+      timestamp: Date.now(),
+      error,
+    });
   }
 
   function on_message(cb) {

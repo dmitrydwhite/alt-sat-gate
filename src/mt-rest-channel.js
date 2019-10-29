@@ -231,12 +231,12 @@ function major_tom_files_channel(passed_host, passed_token) {
 
   function handle_file_upload(success, failure) {
     if (typeof success !== 'function') {
-      throw new Error('Method handle_file_download requires at least one callback function');
+      throw new Error('Method handle_file_upload requires at least one callback function');
     }
 
     if (['function', 'undefined'].indexOf(typeof failure) === -1) {
       throw new Error(
-        'Method handle_file_download second argument must be a callback function'
+        'Method handle_file_upload second argument must be a callback function'
       );
     }
 

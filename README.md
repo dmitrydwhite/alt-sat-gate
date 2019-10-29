@@ -1,4 +1,4 @@
-# wip-mt-node-gateway-lib
+# mt-node-gateway-lib
 
 This app modularizes the primary Major Tom gateway functions: communicating with Major Tom over a WebSocket connection and communicating with Major Tom over a REST connection.
 
@@ -37,14 +37,16 @@ on your computer and in your path.
 const new_gateway = require('../path/to/mt-node-gateway-lib/index.js');
 
 const my_gateway = new_gateway();
-
 // my_gateway is now an instance of Major Tom Node Gateway
+
+// Now let's connect it to Major Tom, using the WebSocket path and the gateway token you can find
+// in your Major Tom instance, on your gateway's page.
 my_gateway.connect_to_mt('wss://you.majortom.cloud', '<your gateway token>');
 // If your instance of you.majortom.cloud is protected by basic auth, pass
 // username and password as the third and fourth args to connect_to_mt()
 
-// This gateway is now connected to Major Tom.  Tell it what to do when it
-// receives a message from Major Tom. We'll keep it simple and just log to console:
+// This gateway is now connected to Major Tom. Tell it what to do when it receives a message from
+// Major Tom by passing a function to .on_mt_message. We'll keep it simple and just log to console:
 my_gateway.on_mt_message(console.log);
 
 // You'll now likely see a couple messages: one marked "Internal Message" that is
@@ -62,22 +64,28 @@ const first_message = {
 // Convert the JavaScript object to a properly formatted JSON string
 const first_message_string = JSON.stringify(first_message);
 
+// The method .to_mt sends a string over WebSocket to your Major Tom gateway.
 my_gateway.to_mt(first_message_string);
 
 // Now if you check your Major Tom Events UI, you should see the message was
 // received from this gateway.
 
-// Let's upload a file from the file system to Major Tom.  First get a file as a
-// Buffer from the file system:
+// Let's upload a file from the file system to Major Tom.
+// In order to do this, you need to have a system to associate with the file. Either take note of an
+// existing system's name, or create a new one. We'll need this in a minute.
+// For this exercise, we'll just use a file from the file system on our computer;
 const fs = require('fs');
+// If you're not familiar with fs, it's a module included in nodeJS that allows direct interface
+// with the file system in a manner closely modeled around standard POSIX functions. We'll use its
+// .readFileSync method to read the contents of a file into a node Buffer object.
 const my_file_buffer = fs.readFileSync('path/to/my_file');
 
 // This library expects the file as a Buffer, the file name (as a string) to
 // display in the Major Tom UI, and the System name (a string) that this file is
 // associated with:
-my_gateway.upload_file_to_mt(my_file_buffer, 'My File', 'Any_System');
+my_gateway.upload_file_to_mt(my_file_buffer, 'My File', 'System_Name_Noted_Above');
 
-// Now if you check your Major Tom Mission Files UI, you should see this file
+// Now if you check your Major Tom Mission Files UI, you should see this file (named "My File")
 // available for download to your machine.
 ```
 
@@ -89,4 +97,5 @@ my_gateway.upload_file_to_mt(my_file_buffer, 'My File', 'Any_System');
 
 ### Connecting to Systems
 
-Every Mission may have unique architecture; this library focuses solely on communication between your Gateway solution and Major Tom.  Connecting to systems could be done in various ways.  See the `📂examples` folder for one solution to connecting to a set of test systems.
+Every Mission may have unique archi
+tecture; this library focuses solely on communication between your Gateway solution and Major Tom.  Connecting to systems could be done in various ways.  See the `📂examples` folder for one solution to connecting to a set of test systems.
